@@ -1,0 +1,28 @@
+pipeline {
+    agent {label 'agent2'}
+
+    stages {
+        stage('build') {
+            steps {
+                git "https://github.com/mahmoud254/jenkins_nodejs_example.git"
+                sh "docker build -f dockerfile . -t node-app:$BUILD_TAG"
+                sh "docker tag node-app:$BUILD_TAG ahmedalfeqy/node-app:$BUILD_TAG"
+            } 
+        }
+    
+        stage('connect') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'password', usernameVariable: 'username')]){
+                sh ' docker login -u ${username} -p ${password}'
+                sh ' docker push ahmedalfeqy/node-app:$BUILD_TAG'
+            }
+          }
+        }
+        stage('run') {
+            steps {
+                sh "docker run -d -p 3000:3000 node-app:$BUILD_TAG"
+            } 
+        }
+        
+    }
+    } 
